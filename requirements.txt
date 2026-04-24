@@ -1,0 +1,15 @@
+# SOC1 Report Content Extractor Dependencies
+# 使用方法: pip install -r requirements.txt
+
+# PDF处理
+pdfplumber>=0.7.0
+
+# Excel输出
+pandas>=1.5.0
+openpyxl>=3.1.0
+
+# HTTP请求
+requests>=2.28.0
+
+# 图像处理（用于扫描件PDF）
+Pillow>=9.0.0
