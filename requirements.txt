@@ -13,3 +13,11 @@ requests>=2.28.0
 
 # 图像处理（用于扫描件PDF）
 Pillow>=9.0.0
+
+# OCR识别（用于扫描件PDF）
+pytesseract>=0.3.10
+
+# 注意：还需要安装Tesseract OCR引擎
+# macOS: brew install tesseract
+# Windows: https://github.com/UB-Mannheim/tesseract/wiki
+# Linux: apt-get install tesseract-ocr

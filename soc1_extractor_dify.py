@@ -2,7 +2,7 @@
 """
 SOC1 Report Content Extractor - Dify API Version
 通过Dify平台调用LLM，提取SOC1报告内容
-支持扫描件PDF（使用视觉模型处理图像）
+支持扫描件PDF（使用本地OCR pytesseract识别）
 """
 
 import pdfplumber
@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import requests
 from io import BytesIO
+import pytesseract
+from PIL import Image
 
 # Dify API配置
 API_KEY = "app-bHdz3erKJIqrqjd2funJ0eDS"
@@ -106,6 +108,46 @@ def extract_all_pages_as_images(pdf_path: str, resolution: int = 150) -> List[st
 
     pdf.close()
     return images
+
+
+def ocr_pdf_pages(pdf_path: str, resolution: int = 200, lang: str = 'eng') -> str:
+    """
+    使用pytesseract对扫描件PDF进行OCR识别
+    将每页转换为图像后进行OCR，合并为完整文本
+
+    Args:
+        pdf_path: PDF文件路径
+        resolution: 图像分辨率（越高OCR效果越好，但速度更慢）
+        lang: OCR语言（eng=英文，chi_sim=简体中文，chi_tra=繁体中文）
+
+    Returns:
+        OCR识别的完整文本，按页分段
+    """
+    pdf = pdfplumber.open(pdf_path)
+    total_pages = len(pdf.pages)
+    all_text = []
+
+    print(f"  开始OCR识别（共{total_pages}页，分辨率{resolution}dpi，语言{lang}）...")
+
+    for i in range(total_pages):
+        page = pdf.pages[i]
+        im = page.to_image(resolution=resolution)
+        pil_image = im.original
+
+        # OCR识别当前页面
+        page_text = pytesseract.image_to_string(pil_image, lang=lang)
+
+        if page_text and page_text.strip():
+            all_text.append(f"[第{i+1}页]\n{page_text.strip()}")
+            print(f"    第{i+1}页: 识别到 {len(page_text.strip())} 字符")
+        else:
+            print(f"    第{i+1}页: 无文本内容")
+
+    pdf.close()
+
+    full_text = "\n\n".join(all_text)
+    print(f"  OCR完成，总计 {len(full_text)} 字符")
+    return full_text
 
 
 def call_dify_chat(query: str, inputs: Dict = None) -> str:
@@ -403,13 +445,13 @@ def process_single_pdf(pdf_path: str) -> Dict:
 
     # 根据是否是扫描件选择处理方式
     if is_scanned:
-        # 扫描件：使用图像模式
-        print("  提取PDF页面图像...")
-        images = extract_all_pages_as_images(pdf_path, resolution=150)
-        print(f"  共 {len(images)} 页图像")
+        # 扫描件：使用OCR识别后发送文本给LLM
+        print("  OCR识别扫描件PDF...")
+        ocr_text = ocr_pdf_pages(pdf_path, resolution=200, lang='eng')
+        print(f"  OCR文本长度: {len(ocr_text)} 字符")
 
-        print("  调用LLM提取内容（图像模式）...")
-        response = call_llm_with_images(prompt, images)
+        print("  调用LLM提取内容（OCR文本模式）...")
+        response = call_llm(prompt, ocr_text)
     else:
         # 文本型PDF：使用文本模式
         print("  提取PDF文本...")

@@ -47,6 +47,7 @@ def build_exe():
         '--hidden-import=json',
         '--hidden-import=base64',
         '--hidden-import=uuid',
+        '--hidden-import=pytesseract',
     ])
 
     print("\n" + "=" * 50)
