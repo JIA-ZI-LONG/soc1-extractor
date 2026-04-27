@@ -1,11 +1,14 @@
-# PyInstaller打包脚本
+# PyInstaller打包脚本 - Windows开箱即用版
 # 使用方法: python build.py
-# Windows平台需要先安装Tesseract OCR引擎
+#
+# 打包时会自动包含Tesseract OCR，无需用户额外安装
+# Windows下需要先安装Tesseract OCR用于打包（仅打包时需要）
 
 import PyInstaller.__main__
 import os
 import shutil
 import sys
+import glob
 
 # 打包参数
 APP_NAME = "SOC1Extractor"
@@ -29,8 +32,38 @@ def find_tesseract_path():
             return path
 
     print("[警告] 未检测到Tesseract OCR安装路径")
-    print("请确保已安装Tesseract OCR: https://github.com/UB-Mannheim/tesseract/wiki")
+    print("请从以下地址下载安装（用于打包）:")
+    print("https://github.com/UB-Mannheim/tesseract/wiki")
+    print("\n打包后的exe将包含Tesseract，用户无需安装")
     return None
+
+
+def get_tesseract_files(tesseract_path):
+    """
+    获取Tesseract OCR所有需要打包的文件
+    包括：可执行文件、DLL依赖、语言数据包
+    """
+    files_to_include = []
+
+    # 1. Tesseract可执行文件
+    tesseract_exe = os.path.join(tesseract_path, "tesseract.exe")
+    if os.path.exists(tesseract_exe):
+        files_to_include.append(('binary', tesseract_exe, 'tesseract'))
+
+    # 2. 核心DLL文件（libtesseract, liblept等）
+    dll_patterns = ['*.dll']
+    for pattern in dll_patterns:
+        dll_files = glob.glob(os.path.join(tesseract_path, pattern))
+        for dll in dll_files:
+            dll_name = os.path.basename(dll)
+            files_to_include.append(('binary', dll, 'tesseract'))
+
+    # 3. tessdata目录（语言包）
+    tessdata_path = os.path.join(tesseract_path, "tessdata")
+    if os.path.exists(tessdata_path):
+        files_to_include.append(('data', tessdata_path, 'tessdata'))
+
+    return files_to_include
 
 
 # 清理之前的构建文件
@@ -50,10 +83,11 @@ def clean_build():
 
 # 执行打包
 def build_exe():
-    print("=" * 50)
-    print("开始打包 SOC1 Extractor...")
+    print("=" * 60)
+    print("SOC1 Extractor 打包脚本")
+    print("=" * 60)
     print(f"平台: {sys.platform}")
-    print("=" * 50)
+    print(f"目标: 生成开箱即用的可执行文件")
 
     clean_build()
 
@@ -62,10 +96,10 @@ def build_exe():
         MAIN_SCRIPT,
         '--name=' + APP_NAME,
         '--onefile',              # 打包成单个exe
-        '--console',              # 保持命令行窗口（交互式输入）
-        '--clean',                # 清理临时文件
-        '--noconfirm',            # 不询问确认
-        # 包含依赖的数据文件
+        '--console',              # 保持命令行窗口
+        '--clean',
+        '--noconfirm',
+        # Python依赖
         '--hidden-import=pdfplumber',
         '--hidden-import=pandas',
         '--hidden-import=openpyxl',
@@ -75,46 +109,49 @@ def build_exe():
         '--hidden-import=base64',
         '--hidden-import=uuid',
         '--hidden-import=pytesseract',
+        '--hidden-import=sys',
+        '--hidden-import=os',
     ]
 
-    # Windows平台特殊处理：包含Tesseract OCR
+    # Windows平台：包含完整的Tesseract OCR
     if sys.platform == 'win32':
         tesseract_path = find_tesseract_path()
         if tesseract_path:
-            # 包含Tesseract可执行文件
-            tesseract_exe = os.path.join(tesseract_path, "tesseract.exe")
-            if os.path.exists(tesseract_exe):
-                pyinstaller_args.extend([
-                    '--add-binary=' + tesseract_exe + ';tesseract',
-                ])
+            tesseract_files = get_tesseract_files(tesseract_path)
 
-            # 包含Tesseract数据文件（语言包）
-            tessdata_path = os.path.join(tesseract_path, "tessdata")
-            if os.path.exists(tessdata_path):
-                pyinstaller_args.extend([
-                    '--add-data=' + tessdata_path + ';tessdata',
-                ])
+            print(f"\n包含Tesseract OCR文件:")
+            for file_type, src_path, dest_dir in tesseract_files:
+                if file_type == 'binary':
+                    pyinstaller_args.append(f'--add-binary={src_path};{dest_dir}')
+                    print(f"  [DLL/EXE] {os.path.basename(src_path)}")
+                elif file_type == 'data':
+                    pyinstaller_args.append(f'--add-data={src_path};{dest_dir}')
+                    # 计算语言包数量
+                    lang_files = glob.glob(os.path.join(src_path, '*.traineddata'))
+                    print(f"  [tessdata] {len(lang_files)} 个语言包")
 
-            print(f"已添加Tesseract OCR文件到打包")
+            print(f"\n总计包含 {len(tesseract_files)} 个Tesseract相关项")
+
+    print("\n开始PyInstaller打包...")
+    print("=" * 60)
 
     PyInstaller.__main__.run(pyinstaller_args)
 
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print("打包完成!")
-    print("=" * 50)
+    print("=" * 60)
 
-    # 输出文件位置
+    # 输出文件信息
     exe_name = f"{APP_NAME}.exe" if sys.platform == 'win32' else APP_NAME
     exe_path = os.path.join('dist', exe_name)
     if os.path.exists(exe_path):
-        print(f"\n可执行文件位置: {exe_path}")
-        print(f"文件大小: {os.path.getsize(exe_path) / 1024 / 1024:.2f} MB")
+        size_mb = os.path.getsize(exe_path) / 1024 / 1024
+        print(f"\n可执行文件: {exe_path}")
+        print(f"文件大小: {size_mb:.2f} MB")
 
-    # Windows平台使用提示
-    if sys.platform == 'win32':
-        print("\n[使用提示]")
-        print("运行时需要确保Tesseract OCR已安装在系统上")
-        print("或使用打包时包含的Tesseract文件")
+        if sys.platform == 'win32':
+            print("\n[特性] 开箱即用 - 无需额外安装Tesseract OCR")
+            print("[使用] 双击运行，输入PDF文件夹路径即可")
 
 
 if __name__ == "__main__":
