@@ -405,7 +405,7 @@ def process_single_pdf(pdf_path: str) -> Dict:
     is_scanned = is_scanned_pdf(pdf_path)
 
     # 构建prompt
-    prompt = """你是一个SOC1报告内容提取专家。请从以下SOC1报告中提取三类内容，以JSON格式返回。
+    prompt = """你是一个SOC107报告内容提取专家。请从以下SOC107报告中提取三类内容，以JSON格式返回。
 
 【提取要求】
 
