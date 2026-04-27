@@ -26,7 +26,20 @@ def find_tesseract_path():
     if sys.platform != 'win32':
         return None
 
-    for path in TESSERACT_WIN_PATHS:
+    # 优先使用环境变量指定的路径（用于GitHub Actions等）
+    env_path = os.environ.get('TESSERACT_PATH')
+    if env_path and os.path.exists(env_path):
+        print(f"使用环境变量指定的Tesseract路径: {env_path}")
+        return env_path
+
+    # 搜索常见安装路径
+    search_paths = [
+        r"C:\Program Files\Tesseract-OCR",
+        r"C:\Program Files (x86)\Tesseract-OCR",
+        r"C:\tools\Tesseract-OCR",  # Chocolatey可能的安装路径
+    ]
+
+    for path in search_paths:
         if os.path.exists(path):
             print(f"检测到Tesseract安装路径: {path}")
             return path
