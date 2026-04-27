@@ -44,6 +44,7 @@ jobs:
         TESSERACT_PATH: "C:\\Program Files\\Tesseract-OCR"
 
     - name: Verify build
+      shell: cmd
       run: |
         if exist dist\SOC1Extractor.exe (
           echo Build successful
