@@ -11,12 +11,51 @@ import os
 import json
 import base64
 import uuid
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 import requests
 from io import BytesIO
 import pytesseract
 from PIL import Image
+
+
+def setup_tesseract_path():
+    """
+    配置Tesseract OCR路径
+    打包后的exe需要指定Tesseract可执行文件位置
+    """
+    if sys.platform == 'win32':
+        # 检查是否在打包环境中运行
+        if getattr(sys, 'frozen', False):
+            # 打包后的exe运行环境
+            base_path = sys._MEIPASS
+            tesseract_exe = os.path.join(base_path, 'tesseract', 'tesseract.exe')
+            tessdata_path = os.path.join(base_path, 'tessdata')
+
+            if os.path.exists(tesseract_exe):
+                pytesseract.pytesseract.tesseract_cmd = tesseract_exe
+                print(f"  [配置] 使用打包的Tesseract: {tesseract_exe}")
+
+            if os.path.exists(tessdata_path):
+                # 设置tessdata路径环境变量
+                os.environ['TESSDATA_PREFIX'] = tessdata_path
+                print(f"  [配置] 使用打包的tessdata: {tessdata_path}")
+        else:
+            # 开发环境：尝试自动检测系统安装的Tesseract
+            tesseract_paths = [
+                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            ]
+            for path in tesseract_paths:
+                if os.path.exists(path):
+                    pytesseract.pytesseract.tesseract_cmd = path
+                    print(f"  [配置] 使用系统Tesseract: {path}")
+                    break
+
+
+# 初始化Tesseract路径
+setup_tesseract_path()
 
 # Dify API配置
 API_KEY = "app-bHdz3erKJIqrqjd2funJ0eDS"
