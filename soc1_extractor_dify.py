@@ -8,6 +8,7 @@ SOC1 Report Content Extractor - Dify API Version
 import pdfplumber
 import pandas as pd
 import os
+import sys
 import json
 import base64
 import uuid
@@ -324,7 +325,7 @@ def process_single_pdf(pdf_path: str) -> Dict:
     is_scanned = is_scanned_pdf(pdf_path)
 
     # 构建prompt
-    prompt = """你是一个SOC1报告内容提取专家。请从以下SOC1报告中提取三类内容，以JSON格式返回。
+    prompt = """你是一个SOC107报告内容提取专家。请从以下SOC107报告中提取三类内容，以JSON格式返回。
 
 【提取要求】
 
@@ -592,7 +593,12 @@ def main():
 
     print("\n" + "=" * 60)
     print("处理完成!")
+    print(f"结果已保存到: {output_path}")
     print("=" * 60)
+
+    # Windows: pause to prevent auto-closing
+    if sys.platform == 'win32':
+        input("\nPress Enter to exit...")
 
 
 if __name__ == "__main__":
