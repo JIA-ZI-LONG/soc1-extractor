@@ -10,6 +10,11 @@ import shutil
 import sys
 import glob
 
+# 设置UTF-8编码（解决Windows中文输出问题）
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 # 打包参数
 APP_NAME = "SOC1Extractor"
 MAIN_SCRIPT = "soc1_extractor_dify.py"
