@@ -673,7 +673,12 @@ def main():
 
     print("\n" + "=" * 60)
     print("处理完成!")
+    print(f"结果已保存到: {output_path}")
     print("=" * 60)
+
+    # Windows打包后暂停，防止窗口自动关闭
+    if sys.platform == 'win32':
+        input("\n按回车键退出...")
 
 
 if __name__ == "__main__":
