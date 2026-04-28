@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SOC1 Report Content Extractor - Dify API Version
-通过Dify平台调用LLM，提取SOC1报告内容
+通过Dify平台调用LLM，提取SOC107报告内容
 支持扫描件PDF（使用视觉模型处理图像）
 """
 

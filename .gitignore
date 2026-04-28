@@ -53,3 +53,6 @@ test/
 # Environment
 .env
 *.env
+
+
+soc107.yml
