@@ -53,3 +53,5 @@ test/
 # Environment
 .env
 *.env
+
+*.yml
